@@ -6,6 +6,8 @@ name = "pypi"
 [packages]
 requests = "*"
 eyed3 = "*"
+spotipy = "*"
+python-dotenv = "*"
 
 [dev-packages]
 
