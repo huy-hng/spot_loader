@@ -5,9 +5,9 @@ import json
 
 import requests
 from requests import Response
-import eyed3
 
-from song import SongType
+
+from song import MP3JuicesSongType
 from spotify import Spotipy
 
 SEARCH_URL = 'https://myfreemp3juices.cc/api/search.php?callback=jQuery213021082371575984715_1635945826190'
@@ -36,7 +36,7 @@ def get_songs(search_query: str):
 	if tries == 0:
 		raise Exception('No tries left')
 
-	songs: list[SongType] = parsed[1:]
+	songs: list[MP3JuicesSongType] = parsed[1:]
 	return songs
 
 
@@ -49,7 +49,7 @@ def parse_response(res: Response):
 	return parsed['response']
 
 
-def download_song(song: SongType):
+def download_song(song: MP3JuicesSongType):
 	artist = song['artist']
 	title = song['title']
 

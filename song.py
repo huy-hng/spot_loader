@@ -1,6 +1,6 @@
 from typing import TypedDict
 
-class SongType(TypedDict):
+class MP3JuicesSongType(TypedDict):
 	artist: str
 	title: str
 	duration: int

@@ -1,4 +1,3 @@
-# %%
 import re
 
 import spotipy
@@ -7,18 +6,6 @@ from spotipy.oauth2 import SpotifyClientCredentials, SpotifyOAuth
 
 from dotenv import load_dotenv
 # load_dotenv()
-
-
-redirect_url = 'http://localhost:8080/'
-redirect_url = 'http://localhost/'
-# sp = spotipy.Spotify()
-sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
-	scope='',
-	redirect_uri=redirect_url))
-
-
-
-
 
 class Spotipy:
 	def __init__(self):
