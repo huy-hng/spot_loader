@@ -1,7 +1,7 @@
 import os
-import shutil
 
 import requests
+from requests import Response
 import eyed3
 
 from song import MP3JuicesSongType
@@ -11,31 +11,39 @@ class FileHandler:
 		self.playlist_name = playlist_name
 
 
-	def download_song(self, song: MP3JuicesSongType):
-		artist = song['artist']
-		title = song['title']
-
-		filename = f'{artist} - {title}'
-		file_location = f'./downloads/{self.playlist_name}/{filename}.mp3'
+	def write_song(self, song: MP3JuicesSongType, res: Response):
+		_, file_location = self.get_name_and_location(song)
 
 		if os.path.isfile(file_location):
 			# check if file already exists, if yes skip
 			return
 
-		with requests.get(song['url'], stream=True) as r:
-			if r.status_code == 404:
-				print(f"Couldn't find {filename}")
-				return
+		with open(file_location, 'wb') as f:
+			for chunk in res.iter_content(chunk_size=128):
+				f.write(chunk)
 
-			with open(file_location, 'wb') as f:
-				shutil.copyfileobj(r.raw, f)
+		try:
+			self.edit_file_metadata(song)
+		except Exception as e:
+			print(e)
 
 
-	def edit_file_metadata(self):
+
+	def edit_file_metadata(self, song: MP3JuicesSongType):
+		filename, file_location = self.get_name_and_location(song)
+
 		audiofile = eyed3.load(file_location)
+
 		if audiofile is None:
-			return print(f"Coudn't change Meta Data of {filename}")
-		audiofile.tag.artist = artist
-		audiofile.tag.title = title
+			raise Exception(f"Coudn't change Meta Data of {filename}")
+
+		audiofile.tag.artist = song['artist']
+		audiofile.tag.title = song['title']
 
 		audiofile.tag.save()
+
+
+	def get_name_and_location(self, song: MP3JuicesSongType):
+		filename = f"{song['artist']} - {song['title']}"
+		location = f'./downloads/{self.playlist_name}/{filename}.mp3'
+		return (filename, location)
