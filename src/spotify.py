@@ -1,11 +1,11 @@
 import re
 
 import spotipy
-from spotipy.oauth2 import SpotifyClientCredentials, SpotifyOAuth
+from spotipy.oauth2 import SpotifyClientCredentials
 
-
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
 # load_dotenv()
+
 
 class Spotipy:
 	def __init__(self):
