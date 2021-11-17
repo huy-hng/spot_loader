@@ -4,7 +4,7 @@ from typing import Callable
 import requests
 from requests import Response
 
-from song import MP3JuicesSongType
+from src.song import MP3JuicesSongType
 
 
 class MP3Juices:
@@ -38,6 +38,7 @@ class MP3Juices:
 		try:
 			return self.retrier(self.request, song['url'])
 		except Exception as e:
+			print(e)
 			print(f"Couldn't download {song['title']} by {song['artist']}")
 
 

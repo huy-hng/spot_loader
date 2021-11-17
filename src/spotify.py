@@ -45,3 +45,4 @@ class Spotipy:
 			track_list.append(search_query)
 
 		return track_list
+	
