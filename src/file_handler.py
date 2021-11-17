@@ -4,11 +4,14 @@ import requests
 from requests import Response
 import eyed3
 
-from song import MP3JuicesSongType
+from src.song import MP3JuicesSongType
 
 class FileHandler:
 	def __init__(self, playlist_name: str):
 		self.playlist_name = playlist_name
+		downloads_folder = f'./downloads/{self.playlist_name}'
+		if not os.path.isdir(downloads_folder):
+			os.mkdir(downloads_folder)
 
 
 	def write_song(self, song: MP3JuicesSongType, res: Response):
