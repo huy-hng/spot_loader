@@ -1,6 +1,5 @@
 import os
 
-import requests
 from requests import Response
 import eyed3
 
