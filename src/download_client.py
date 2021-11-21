@@ -14,9 +14,9 @@ class MP3Juices:
 		q = search_query.replace(' ', '+')
 
 		try:
-			data = self.retrier(self.get_data, q)
+			data = self.retrier(self.get_data, search_query=q)
 		except Exception as e:
-			print(f"Couldn't find {search_query} on MP3JUices")
+			print(f"Couldn't find {search_query} on MP3Juices")
 
 		songs: list[MP3JuicesSongType] = data[1:]
 		return songs
@@ -36,14 +36,15 @@ class MP3Juices:
 
 	def download_song(self, song: MP3JuicesSongType):
 		try:
-			return self.retrier(self.request, song['url'])
+			return self.retrier(self.request, url=song['url'])
 		except Exception as e:
 			print(e)
 			print(f"Couldn't download {song['title']} by {song['artist']}")
 
 
 	def request(self, url: str):
-		res = requests.get(url, stream=True)
+		# res = requests.get(url, stream=True)
+		res = requests.get(url)
 		if res.status_code == 404:
 			return None
 		return res
@@ -51,13 +52,13 @@ class MP3Juices:
 	
 
 	@staticmethod
-	def retrier(fn: Callable, *args, tries:int=20):
+	def retrier(fn: Callable, tries:int=20, **kwargs):
 		result = None
 		while result is None and tries > 0:
-			result = fn(args)
+			result = fn(**kwargs)
 			tries -= 1
 
 		if tries == 0:
-			raise Exception(f'No tries left for {fn.__name__} with args {args}')
+			raise Exception(f'No tries left for {fn.__name__} with args {kwargs}')
 
 		return result
