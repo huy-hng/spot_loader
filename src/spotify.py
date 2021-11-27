@@ -36,14 +36,6 @@ class Spotipy:
 		uri = result[9:-1]
 		return uri
 
-	def tracks_to_list(self, tracks):
-		track_list = []
-		for track in tracks:
-			track = track['track']
-			search_query = f"{track['name']} {track['artists'][0]['name']}"
-			track_list.append(search_query)
-
-		return track_list
 
 	def track_to_query(self, track):
 		track = track['track']
@@ -51,6 +43,7 @@ class Spotipy:
 		track_artist = track['artists'][0]['name']
 		return f'{track_artist} - {track_name}'
 	
+
 	def get_playlist_name(self, url: str):
 		uri = self.get_uri_from_url(url)
 		playlist = self.sp.playlist(uri)
