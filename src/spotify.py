@@ -24,7 +24,7 @@ class Spotipy:
 
 		items = {'next': True}
 		while items['next']:
-			items = self.sp.playlist_items(uri, offset=0)
+			items = self.sp.playlist_items(uri, offset=offset)
 			tracks += items['items']
 			offset += 100
 
@@ -38,11 +38,20 @@ class Spotipy:
 
 	def tracks_to_list(self, tracks):
 		track_list = []
-		# tracks = tracks['tracks']
 		for track in tracks:
 			track = track['track']
 			search_query = f"{track['name']} {track['artists'][0]['name']}"
 			track_list.append(search_query)
 
 		return track_list
+
+	def track_to_query(self, track):
+		track = track['track']
+		track_name = track['name'] 
+		track_artist = track['artists'][0]['name']
+		return f'{track_artist} - {track_name}'
 	
+	def get_playlist_name(self, url: str):
+		uri = self.get_uri_from_url(url)
+		playlist = self.sp.playlist(uri)
+		return playlist['name']
