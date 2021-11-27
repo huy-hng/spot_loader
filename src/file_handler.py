@@ -4,6 +4,7 @@ from requests import Response
 import eyed3
 from eyed3.id3.frames import ImageFrame
 	
+from src.logger import log
 from src.song import MP3JuicesSongType
 
 class FileHandler:
@@ -20,9 +21,12 @@ class FileHandler:
 	def write_song(self, filename: str, res: Response):
 		file_location = f'{self.downloads_location}/All Songs/{filename}'
 
-		with open(file_location, 'wb') as f:
-			for chunk in res.iter_content(chunk_size=128):
-				f.write(chunk)
+		try:
+			with open(file_location, 'wb') as f:
+				for chunk in res.iter_content(chunk_size=128):
+					f.write(chunk)
+		except Exception as e:
+			log.exception(e)
 
 
 	def edit_file_metadata(self, song: MP3JuicesSongType, album_cover: Response):
