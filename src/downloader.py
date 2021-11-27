@@ -80,7 +80,7 @@ class Downloader:
 		self.fh.write_song(filename, song)
 
 		album_cover: Response = self.mp3.download_album_cover(song_info)
-		self.fh.edit_file_metadata(song_info, album_cover)
+		self.fh.edit_file_metadata(filename, song_info, album_cover)
 
 
 	def move_tracks_to_folder(self, playlist_name: str, track_locations: list):

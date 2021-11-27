@@ -29,21 +29,23 @@ class FileHandler:
 			log.exception(e)
 
 
-	def edit_file_metadata(self, song: MP3JuicesSongType, album_cover: Response):
-		filename = self.get_filename(song)
+	def edit_file_metadata(self, filename:str,
+															 song: MP3JuicesSongType,
+															 album_cover: Response):
 
 		audiofile = eyed3.load(f'{self.downloads_location}/All Songs/{filename}')
+		
+		if audiofile is None:
+			raise Exception(f"Coudn't change Meta Data of {filename}")
 
 		if (audiofile.tag == None):
 			audiofile.initTag()
 
-		if audiofile is None:
-			raise Exception(f"Coudn't change Meta Data of {filename}")
-
 		audiofile.tag.artist = song['artist']
 		audiofile.tag.title = song['title']
-		audiofile.tag.album = song['album']['title']
-		# audiofile.tag.
+
+		if song.get('album') is not None:
+			audiofile.tag.album = song['album']['title']
 
 		if album_cover is not None:
 			audiofile.tag.images.set(
