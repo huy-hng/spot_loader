@@ -19,6 +19,9 @@ class Downloader:
 		self.mp3 = MP3Juices()
 		self.fh = FileHandler(downloads_location=downloads_location)
 
+		self.fh.create_playlist_folder('')
+		self.fh.create_playlist_folder('All Songs')
+
 			
 	def download_playlists(self):
 		with open('./playlists.txt') as f:
@@ -45,26 +48,29 @@ class Downloader:
 		log.info(f'Playlist has {len(tracks)} tracks in it.')
 		with ThreadPoolExecutor() as executor:
 			for track in tracks:
-				# download_song(track, track_list)
+				# self.download_song(track, track_list)
 				executor.submit(self.download_song, track, track_list)
 
 		return track_list
 
 
 	def download_song(self, track, track_list: list):
-		duration = round(track['duration_ms'] / 1000)
+		duration = round(track['track']['duration_ms'] / 1000)
 		query = self.sp.track_to_query(track)
 
-		log.info('')
-		log.info(f'Searching for "{query}"')
+		log.debug(f'Searching for "{query}"')
 		song_info: MP3JuicesSongType = self.mp3.find_song(query, duration)
+		if song_info is None:
+			log.error(f'{query} could not be found.')
+			return
 
 		# filename = self.fh.get_filename(song_info)
 		filename = f'{query}.mp3'
+		filename = filename.replace('/', '')
 		track_list.append(filename)
 
 		if os.path.isfile(f'{self.downloads_location}/All Songs/{filename}'):
-			log.info(f'"{query}" already downloaded.')
+			log.debug(f'"{query}" already downloaded.')
 			return
 
 		log.info(f'Downloading "{query}"...')
