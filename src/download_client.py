@@ -9,7 +9,7 @@ from src.song import MP3JuicesSongType
 
 class DownloadClient:
 	def __init__(self, url: str):
-		SEARCH_URL = f'https://{url}/api/search.php?callback=jQuery213021082371575984715_1635945826190'
+		self.SEARCH_URL = f'https://{url}/api/search.php?callback=jQuery213021082371575984715_1635945826190'
 		
 
 	def find_song(self, query: str, duration: int):
@@ -24,7 +24,7 @@ class DownloadClient:
 		try:
 			data = self.retrier(self._search_for_query, search_query=q)
 		except Exception as e:
-			log.error(f"Couldn't find {search_query} on MP3Juices")
+			log.error(f"Couldn't find {search_query}")
 
 		songs: list[MP3JuicesSongType] = data[1:]
 		return songs
