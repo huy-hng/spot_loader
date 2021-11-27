@@ -7,8 +7,10 @@ from src.logger import log
 from src.song import MP3JuicesSongType
 
 
-class MP3Juices:
-	SEARCH_URL = 'https://myfreemp3juices.cc/api/search.php?callback=jQuery213021082371575984715_1635945826190'
+class DownloadClient:
+	def __init__(self, url: str):
+		SEARCH_URL = f'https://{url}/api/search.php?callback=jQuery213021082371575984715_1635945826190'
+		
 
 	def find_song(self, query: str, duration: int):
 		versions = self._get_song_versions(query)

@@ -6,17 +6,17 @@ from requests import Response
 
 from src.logger import log
 from src.spotify import Spotipy
-from src.download_client import MP3Juices
+from src.download_client import DownloadClient
 from src.file_handler import FileHandler
 from src.song import MP3JuicesSongType
 
 
 class Downloader:
-	def __init__(self, downloads_location: str):
+	def __init__(self, downloads_location: str, url: str):
 		self.downloads_location = downloads_location
 
 		self.sp = Spotipy()
-		self.mp3 = MP3Juices()
+		self.mp3 = DownloadClient(url)
 		self.fh = FileHandler(downloads_location=downloads_location)
 
 		self.fh.create_playlist_folder('')
