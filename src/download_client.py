@@ -22,12 +22,12 @@ class DownloadClient:
 		for val in vals:
 			if val:
 				return val
-		return None
+		return
 
 	def find_song(self, query: str, duration: int):
 		versions = self._get_song_versions(query)
 		if versions is None:
-			return None
+			return
 		song = self._choose_version(versions, duration)
 		return song
 
@@ -40,19 +40,16 @@ class DownloadClient:
 			data = self._search_for_query(q)
 		except Exception as e:
 			log.error(f"Couldn't find {search_query}")
+			log.exception(e)
 
 		if data is None:
-			return None
+			return
 		songs: list[MP3JuicesSongType] = data[1:]
 		return songs
 
 	def _search_for_query(self, search_query):
 		data = {'q': search_query}
-		try:
-			res = self.request(self.SEARCH_URL, data=data)
-		except Exception as e:
-			log.error(f"Couldn't find {search_query}")
-			return None
+		res = self.request(self.SEARCH_URL, data=data)
 
 		text = res.text
 		start_index = text.find('{')
@@ -84,7 +81,7 @@ class DownloadClient:
 		except Exception as e:
 			log.exception(e)
 			log.error(f"Couldn't download {song['title']} by {song['artist']}")
-			return None
+			return
 
 
 	def download_album_cover(self, song_info: MP3JuicesSongType):
