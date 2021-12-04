@@ -14,7 +14,7 @@ class DownloadClient:
 			raise Exception('Bad url >:(')
 		log.warning(f'Using {normalized_url}...')
 
-		self.SEARCH_URL = f'https://{url}/api/search.php?callback=jQuery213021082371575984715_1635945826190'
+		self.SEARCH_URL = f'https://{normalized_url}/api/search.php?callback=jQuery213021082371575984715_1635945826190'
 		
 	def normalize_url(self, url: str):
 		vals = url.split('/')
