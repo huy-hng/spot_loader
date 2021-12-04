@@ -27,8 +27,12 @@ class DownloadClient:
 	def find_song(self, query: str, duration: int):
 		versions = self._get_song_versions(query)
 		if versions is None:
+			log.error(f"Couldn't find {query}")
 			return
+
 		song = self._choose_version(versions, duration)
+		if song is None:
+			log.error(f'No versions available for {query}')
 		return song
 
 	def _get_song_versions(self, search_query: str):
@@ -39,24 +43,32 @@ class DownloadClient:
 		try:
 			data = self._search_for_query(q)
 		except Exception as e:
-			log.error(f"Couldn't find {search_query}")
 			log.exception(e)
-
-		if data is None:
 			return
+		finally:
+			if data is None:
+				return
+
 		songs: list[MP3JuicesSongType] = data[1:]
 		return songs
 
+
 	def _search_for_query(self, search_query):
-		data = {'q': search_query}
-		res = self.request(self.SEARCH_URL, data=data)
+		tries = 20
+		parsed = {}
+		while parsed.get('response') is None and tries > 0:
+			data = {'q': search_query}
+			res = self.request(self.SEARCH_URL, data=data)
 
-		text = res.text
-		start_index = text.find('{')
-		end_index = text.rfind('}')
+			text = res.text
+			start_index = text.find('{')
+			end_index = text.rfind('}')
 
-		parsed = json.loads(text[start_index:end_index+1])
+			parsed = json.loads(text[start_index:end_index+1])
+			tries -= 1
+
 		return parsed['response']
+
 
 	def _choose_version(self, versions: list[MP3JuicesSongType], duration: int):
 		""" choose the version that has the duration
