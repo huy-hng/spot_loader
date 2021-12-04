@@ -49,37 +49,42 @@ class Downloader:
 		with ThreadPoolExecutor() as executor:
 			for track in tracks:
 				# self.download_song(track, track_list)
-				executor.submit(self.download_song, track, track_list)
+				query = self.sp.track_to_query(track)
+				filename = f'{query}.mp3'
+				track_list.append(filename)
+				filename = filename.replace('/', '')
+
+				executor.submit(self.download_song, track, filename)
 
 		return track_list
 
 
-	def download_song(self, track, track_list: list):
+	def download_song(self, track, filename: str):
 		duration = round(track['track']['duration_ms'] / 1000)
 		query = self.sp.track_to_query(track)
 
 		log.debug(f'Searching for "{query}"')
-		song_info: MP3JuicesSongType = self.mp3.find_song(query, duration)
+		song_info = self.mp3.find_song(query, duration)
 		if song_info is None:
 			log.error(f'{query} could not be found.')
 			return
 
 		# filename = self.fh.get_filename(song_info)
-		filename = f'{query}.mp3'
-		filename = filename.replace('/', '')
-		track_list.append(filename)
 
 		if os.path.isfile(f'{self.downloads_location}/All Songs/{filename}'):
 			log.debug(f'"{query}" already downloaded.')
 			return
 
 		log.info(f'Downloading "{query}"...')
-		song: Response = self.mp3.download_song(song_info)
+		song = self.mp3.download_song(song_info)
 		if song is None:
 			return
 		self.fh.write_song(filename, song)
 
-		album_cover: Response = self.mp3.download_album_cover(song_info)
+		album_cover = self.mp3.download_album_cover(song_info)
+		if album_cover is None:
+			return
+
 		self.fh.edit_file_metadata(filename, song_info, album_cover)
 
 
