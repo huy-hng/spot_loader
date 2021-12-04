@@ -1,7 +1,7 @@
 import json
-from typing import Callable
 
 import requests
+from requests import Response
 
 from src.logger import log
 from src.song import MP3JuicesSongType
@@ -9,11 +9,25 @@ from src.song import MP3JuicesSongType
 
 class DownloadClient:
 	def __init__(self, url: str):
+		normalized_url = self.normalize_url(url)
+		if normalized_url is None:
+			raise Exception('Bad url >:(')
+		log.warning(f'Using {normalized_url}...')
+
 		self.SEARCH_URL = f'https://{url}/api/search.php?callback=jQuery213021082371575984715_1635945826190'
 		
+	def normalize_url(self, url: str):
+		vals = url.split('/')
+		vals.reverse()
+		for val in vals:
+			if val:
+				return val
+		return None
 
 	def find_song(self, query: str, duration: int):
 		versions = self._get_song_versions(query)
+		if versions is None:
+			return None
 		song = self._choose_version(versions, duration)
 		return song
 
@@ -21,17 +35,24 @@ class DownloadClient:
 		""" throws exception if query couldnt be found """
 		q = search_query.replace(' ', '+')
 
+		data = None
 		try:
-			data = self.retrier(self._search_for_query, search_query=q)
+			data = self._search_for_query(q)
 		except Exception as e:
 			log.error(f"Couldn't find {search_query}")
 
+		if data is None:
+			return None
 		songs: list[MP3JuicesSongType] = data[1:]
 		return songs
 
 	def _search_for_query(self, search_query):
 		data = {'q': search_query}
-		res = requests.post(self.SEARCH_URL, data=data)
+		try:
+			res = self.request(self.SEARCH_URL, data=data)
+		except Exception as e:
+			log.error(f"Couldn't find {search_query}")
+			return None
 
 		text = res.text
 		start_index = text.find('{')
@@ -59,17 +80,11 @@ class DownloadClient:
 	def download_song(self, song: MP3JuicesSongType):
 		""" throws exception if song couldnt be downloaded for some reason """
 		try:
-			return self.retrier(self.request, url=song['url'])
+			return self.request(song['url'])
 		except Exception as e:
 			log.exception(e)
 			log.error(f"Couldn't download {song['title']} by {song['artist']}")
-
-
-	def request(self, url: str):
-		res = requests.get(url, stream=True)
-		if res.status_code == 404:
 			return None
-		return res
 
 
 	def download_album_cover(self, song_info: MP3JuicesSongType):
@@ -84,20 +99,28 @@ class DownloadClient:
 			return
 			
 		try:
-			return self.retrier(self.request, url=album_cover_url)
+			return self.request(album_cover_url)
 		except Exception as e:
 			log.exception(e)
 			log.error(f'Could not download album cover for {query}')
 
 
-	@staticmethod
-	def retrier(fn: Callable, tries:int=20, **kwargs):
-		result = None
-		while result is None and tries > 0:
-			result = fn(**kwargs)
+	def request(self, url: str, data=None) -> Response:
+		tries = 20
+		res = None
+
+		while res is None and tries > 0:
+			if data is not None:
+				res = requests.post(url, data=data)
+			else:
+				res = requests.get(url, stream=True)
 			tries -= 1
 
 		if tries == 0:
-			raise Exception(f'No tries left for {fn.__name__} with args {kwargs}')
+			raise Exception(f'No tries left for {url}')
 
-		return result
+		if res is None or res.status_code == 404:
+			raise Exception(f'Bad request')
+
+		return res
+
