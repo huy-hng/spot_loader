@@ -55,6 +55,7 @@ class Downloader:
 				filename = filename.replace('/', '')
 
 				executor.submit(self.download_song, track, filename)
+				# self.download_song(track, filename)
 
 		return track_list
 
@@ -66,12 +67,12 @@ class Downloader:
 		log.debug(f'Searching for "{query}"')
 		song_info = self.mp3.find_song(query, duration)
 		if song_info is None:
-			log.error(f'{query} could not be found.')
 			return
 
 		# filename = self.fh.get_filename(song_info)
 
-		if os.path.isfile(f'{self.downloads_location}/All Songs/{filename}'):
+		file_location = f'{self.downloads_location}/All Songs/{filename}'
+		if self.is_file(file_location):
 			log.debug(f'"{query}" already downloaded.')
 			return
 
@@ -93,4 +94,12 @@ class Downloader:
 		for location in track_locations:
 			src = f'{self.downloads_location}/All Songs/{location}'
 			dst = f'{self.downloads_location}/{playlist_name}/{location}'
+
+			if not self.is_file(src):
+				continue
+
 			shutil.copy2(src, dst)
+
+	@staticmethod
+	def is_file(file_location: str):
+		return os.path.isfile(file_location)
