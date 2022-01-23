@@ -3,6 +3,7 @@ import os
 from requests import Response
 import eyed3
 from eyed3.id3.frames import ImageFrame
+eyed3.log.setLevel("ERROR")
 	
 from src.logger import log
 from src.song import MP3JuicesSongType
@@ -30,19 +31,22 @@ class FileHandler:
 
 
 	def edit_file_metadata(self, filename:str,
+															 track_num: int,
 															 song: MP3JuicesSongType,
 															 album_cover: Response):
 
 		audiofile = eyed3.load(f'{self.downloads_location}/All Songs/{filename}')
 		
 		if audiofile is None:
-			raise Exception(f"Coudn't change Meta Data of {filename}")
+			log.error(f"Coudn't change Meta Data of {filename}")
+			return
 
 		if (audiofile.tag == None):
 			audiofile.initTag()
 
 		audiofile.tag.artist = song['artist']
 		audiofile.tag.title = song['title']
+		audiofile.tag.track_num = track_num
 
 		if song.get('album') is not None:
 			audiofile.tag.album = song['album']['title']

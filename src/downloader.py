@@ -28,14 +28,16 @@ class Downloader:
 			playlists = [line.strip() for line in f.readlines()]
 
 		log.info(f'Found {len(playlists)} playlists.')
-		tracks_in_playlists = {}
+		# tracks_in_playlists = {}
 		for url in playlists:
 			playlist_name = self.sp.get_playlist_name(url)
 			log.info(f'Downloading {playlist_name}')
 
 			track_list = self.download_playlist(url)
 
-			tracks_in_playlists[playlist_name] = track_list
+			# tracks_in_playlists[playlist_name] = track_list
+			log.debug(f'Tracklist of {playlist_name}')
+			log.debug(track_list)
 
 			self.move_tracks_to_folder(playlist_name, track_list)
 		
@@ -47,20 +49,20 @@ class Downloader:
 
 		log.info(f'Playlist has {len(tracks)} tracks in it.')
 		with ThreadPoolExecutor() as executor:
-			for track in tracks:
+			for i, track in enumerate(tracks):
 				# self.download_song(track, track_list)
 				query = self.sp.track_to_query(track)
 				filename = f'{query}.mp3'
 				track_list.append(filename)
 				filename = filename.replace('/', '')
 
-				executor.submit(self.download_song, track, filename)
-				# self.download_song(track, filename)
+				executor.submit(self.download_song, track, (i+1, len(tracks)), filename)
+				# self.download_song(track, (i+1, len(tracks)), filename)
 
 		return track_list
 
 
-	def download_song(self, track, filename: str):
+	def download_song(self, track, track_num: int, filename: str):
 		duration = round(track['track']['duration_ms'] / 1000)
 		query = self.sp.track_to_query(track)
 
@@ -69,7 +71,7 @@ class Downloader:
 		if song_info is None:
 			return
 
-		# filename = self.fh.get_filename(song_info)
+		filename = self.fh.get_filename(song_info)
 
 		file_location = f'{self.downloads_location}/All Songs/{filename}'
 		if self.is_file(file_location):
@@ -83,17 +85,15 @@ class Downloader:
 		self.fh.write_song(filename, song)
 
 		album_cover = self.mp3.download_album_cover(song_info)
-		if album_cover is None:
-			return
 
-		self.fh.edit_file_metadata(filename, song_info, album_cover)
+		self.fh.edit_file_metadata(filename, track_num, song_info, album_cover)
 
 
-	def move_tracks_to_folder(self, playlist_name: str, track_locations: list):
+	def move_tracks_to_folder(self, playlist_name: str, track_list: list[str]):
 		self.fh.create_playlist_folder(playlist_name)
-		for location in track_locations:
-			src = f'{self.downloads_location}/All Songs/{location}'
-			dst = f'{self.downloads_location}/{playlist_name}/{location}'
+		for track_name in track_list:
+			src = f'{self.downloads_location}/All Songs/{track_name}'
+			dst = f'{self.downloads_location}/{playlist_name}/{track_name}'
 
 			if not self.is_file(src):
 				continue
