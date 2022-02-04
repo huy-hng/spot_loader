@@ -32,6 +32,7 @@ class FileHandler:
 
 	def edit_file_metadata(self, filename:str,
 															 track_num: int,
+															 track: dict,
 															 song: MP3JuicesSongType,
 															 album_cover: Response):
 
@@ -44,8 +45,11 @@ class FileHandler:
 		if (audiofile.tag == None):
 			audiofile.initTag()
 
-		audiofile.tag.artist = song['artist']
-		audiofile.tag.title = song['title']
+		track = track['track']
+		track_name = track['name'] 
+		track_artist = track['artists'][0]['name']
+		audiofile.tag.artist = track_artist
+		audiofile.tag.title = track_name
 		audiofile.tag.track_num = track_num
 
 		if song.get('album') is not None:
