@@ -4,7 +4,7 @@ from requests import Response
 import eyed3
 from eyed3.id3.frames import ImageFrame
 eyed3.log.setLevel("ERROR")
-	
+
 from src.logger import log
 from src.song import MP3JuicesSongType
 
@@ -13,13 +13,18 @@ class FileHandler:
 			self.downloads_location = downloads_location
 
 
+	def normalize_name(self, name: str):
+		return name.replace('/', '_')
+
 	def create_playlist_folder(self, playlist_name: str):
+		playlist_name = self.normalize_name(playlist_name)
 		downloads_folder = f'{self.downloads_location}/{playlist_name}'
 		if not os.path.isdir(downloads_folder):
 			os.mkdir(downloads_folder)
 
 
 	def write_song(self, filename: str, res: Response):
+		filename = self.normalize_name(filename)
 		file_location = f'{self.downloads_location}/All Songs/{filename}'
 
 		try:
@@ -36,8 +41,9 @@ class FileHandler:
 															 song: MP3JuicesSongType,
 															 album_cover: Response):
 
+		filename = self.normalize_name(filename)
 		audiofile = eyed3.load(f'{self.downloads_location}/All Songs/{filename}')
-		
+
 		if audiofile is None:
 			log.error(f"Coudn't change Meta Data of {filename}")
 			return
@@ -46,7 +52,7 @@ class FileHandler:
 			audiofile.initTag()
 
 		track = track['track']
-		track_name = track['name'] 
+		track_name = track['name']
 		track_artist = track['artists'][0]['name']
 		audiofile.tag.artist = track_artist
 		audiofile.tag.title = track_name
