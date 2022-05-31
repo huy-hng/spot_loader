@@ -90,6 +90,7 @@ class Downloader:
 
 
 	def move_tracks_to_folder(self, playlist_name: str, track_list: list[str]):
+		playlist_name = self.fh.normalize_name(playlist_name)
 		self.fh.create_playlist_folder(playlist_name)
 		for track_name in track_list:
 			src = f'{self.downloads_location}/All Songs/{track_name}'
