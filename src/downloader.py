@@ -1,6 +1,7 @@
 import shutil
 import os
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ALL_COMPLETED, ThreadPoolExecutor
+import concurrent.futures
 
 from requests import Response
 
@@ -22,6 +23,8 @@ class Downloader:
 		self.fh.create_playlist_folder('')
 		self.fh.create_playlist_folder('All Songs')
 
+		self.executor = ThreadPoolExecutor()
+
 			
 	def download_playlists(self):
 		with open('./playlists.txt') as f:
@@ -29,37 +32,50 @@ class Downloader:
 
 		log.info(f'Found {len(playlists)} playlists.')
 		# tracks_in_playlists = {}
+
+		# pairs = {}
 		for url in playlists:
 			playlist_name = self.sp.get_playlist_name(url)
 			log.info(f'Downloading {playlist_name}')
 
+			# track_list_future = self.executor.submit(self.download_playlist, url)
+			# pairs[track_list_future] = playlist_name
+
+			# log.debug(f'Tracklist of {playlist_name}')
+			# log.debug(track_list)
+
 			track_list = self.download_playlist(url)
-
-			# tracks_in_playlists[playlist_name] = track_list
-			log.debug(f'Tracklist of {playlist_name}')
-			log.debug(track_list)
-
+			log.info(f'Playlist {playlist_name} finished downloading. Moving Tracks.')
 			self.move_tracks_to_folder(playlist_name, track_list)
+
+
+		# for future in concurrent.futures.as_completed(pairs):
+		# 	playlist_name = pairs[future]
+		# 	log.info(f'Playlist {playlist_name} finished downloading. Moving Tracks.')
+		# 	track_list = future.result()
+		# 	self.move_tracks_to_folder(playlist_name, track_list)
+
 		
 
 	def download_playlist(self, url: str):
 		tracks = self.sp.get_playlist_tracks(url)
 
 		track_list = []
+		futures = []
 
-		log.info(f'Playlist has {len(tracks)} tracks in it.')
-		with ThreadPoolExecutor() as executor:
-			for i, track in enumerate(tracks):
-				# self.download_song(track, track_list)
-				query = self.sp.track_to_query(track)
-				filename = f'{query}.mp3'
-				filename = filename.replace('/', '')
+		# log.info(f'Playlist has {len(tracks)} tracks in it.')
+		for i, track in enumerate(tracks):
+			query = self.sp.track_to_query(track)
+			filename = f'{query}.mp3'
+			filename = filename.replace('/', '')
 
-				track_list.append(filename)
+			track_list.append(filename)
 
-				executor.submit(self.download_song, track, (i+1, len(tracks)), filename)
-				# self.download_song(track, (i+1, len(tracks)), filename)
+			future = self.executor.submit(self.download_song, track, (i+1, len(tracks)), filename)
+			futures.append(future)
+			# self.download_song(track, (i+1, len(tracks)), filename)
 
+		concurrent.futures.wait(futures, return_when=ALL_COMPLETED)
 		return track_list
 
 
@@ -97,6 +113,9 @@ class Downloader:
 			dst = f'{self.downloads_location}/{playlist_name}/{track_name}'
 
 			if not self.is_file(src):
+				continue
+
+			if self.is_file(dst):
 				continue
 
 			shutil.copy2(src, dst)
