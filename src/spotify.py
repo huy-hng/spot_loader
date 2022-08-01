@@ -37,12 +37,6 @@ class Spotipy:
 		return uri
 
 
-	def track_to_query(self, track):
-		track = track['track']
-		track_name = track['name'] 
-		track_artist = track['artists'][0]['name']
-		return f'{track_artist} - {track_name}'
-	
 
 	def get_playlist_name(self, url: str):
 		uri = self.get_uri_from_url(url)
