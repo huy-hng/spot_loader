@@ -1,4 +1,5 @@
 from email.mime import audio
+from fileinput import filename
 import os
 import glob
 import shutil
@@ -12,8 +13,9 @@ from src.logger import log
 from src.song import MP3JuicesSongType
 
 class FileHandler:
-	def __init__(self, downloads_location='./downloads') -> None:
+	def __init__(self, downloads_location='./downloads', extended=bool) -> None:
 			self.downloads_location = downloads_location
+			self.extended = extended
 
 
 	def normalize_name(self, name: str):
@@ -27,10 +29,13 @@ class FileHandler:
 		return f'{track_artist} - {track_name}'
 	
 
-	def create_playlist_folder(self, playlist_name: str):
+	def create_playlist_folder(self, playlist_name: str, extended: bool=False):
 		playlist_name = self.normalize_name(playlist_name)
 		playlist_folder = f'{self.downloads_location}/{playlist_name}'
+		if extended:
+			playlist_folder = f'{self.downloads_location}/Extended Playlists/{playlist_name}'
 		os.makedirs(playlist_folder, exist_ok=True)
+		return playlist_folder
 
 
 	def write_song(self, filename: str, res: Response):
@@ -45,22 +50,32 @@ class FileHandler:
 			log.exception(e)
 
 
-	def delete_old_songs_from_playlist(self, playlist_name: str, tracks: list[dict]):
-		queries = [self.track_to_query(track) for track in tracks]
-		track_list = [f'{self.normalize_name(query)}.mp3' for query in queries]
+	def get_filename(self, track: dict, extended: bool):
+		query = self.track_to_query(track)
+		file_name = self.normalize_name(query)
+		if extended and 'extended' not in query.lower():
+			file_name += ' - Extended Mix'
+		file_name += '.mp3'
+		return file_name
+
+	def delete_old_songs_from_playlist(self, playlist_path: str,
+																		track_list: list[str],
+																		extended: bool):
+
+		# track_list = [self.get_filename(track, extended) for track in tracks]
 
 		tracks_currently_in_folder = glob.glob(
-			f'{self.downloads_location}/{playlist_name}/*.mp3')
+			f'{playlist_path}/*.mp3')
 		for path in tracks_currently_in_folder:
 			track = path.split('/')[-1]
 			if track not in track_list:
-				log.warning(f'Removing {track} from {playlist_name}')
+				log.warning(f'Removing {track} from {playlist_path}')
 				os.remove(path)
 
 
-	def copy_track_to_folder(self, playlist_name: str, file_name: str):
+	def copy_track_to_folder(self, playlist_path: str, file_name: str):
 		src = f'{self.downloads_location}/All Songs/{file_name}'
-		dst = f'{self.downloads_location}/{playlist_name}/{file_name}'
+		dst = f'{playlist_path}/{file_name}'
 
 		# if track to copy doesnt exist
 		if not self.is_file(src): return
@@ -69,12 +84,6 @@ class FileHandler:
 		if self.is_file(dst): return
 
 		shutil.copy2(src, dst)
-
-	def copy_tracks_to_folder(self, playlist_name: str, track_list: list[str]):
-		playlist_name = self.fh.normalize_name(playlist_name)
-		self.fh.create_playlist_folder(playlist_name)
-		for track_name in track_list:
-			self.copy_track_to_folder(playlist_name, track_name)
 
 
 	def load_audiofile(self, file_path: str):
@@ -95,17 +104,17 @@ class FileHandler:
 		duration = audiofile.info.time_secs
 		return duration
 
-	def edit_track_num(self, file_path: str, track_num: int):
+	def edit_track_num(self, file_path: str, track_num: tuple[int, int]):
 		audiofile = self.load_audiofile(file_path)
 		audiofile.tag.track_num = track_num
 		audiofile.tag.save()
 
 
 	def edit_file_metadata(self, file_path:str,
-															 track_num: int,
+															 track_num: tuple[int, int],
 															 track: dict,
 															 song: MP3JuicesSongType,
-															 album_cover: Response):
+															 album_cover: Response | None):
 
 		# audiofile = eyed3.load(f'{self.downloads_location}/All Songs/{filename}')
 		audiofile = self.load_audiofile(file_path)

@@ -37,8 +37,6 @@ class DownloadClient:
 		else:
 			song = self._choose_closest_version(versions, duration)
 
-		if song is None:
-			log.error(f'No versions available for "{query}"')
 		return song
 
 	def _get_song_versions(self, search_query: str):
@@ -82,7 +80,7 @@ class DownloadClient:
 				down it is in the list"""
 
 		chosen = None
-		smallest_diff = 99999
+		smallest_diff = 99999999
 		for i, version in enumerate(versions):
 			diff = abs(duration - version['duration']) * i
 
@@ -92,13 +90,16 @@ class DownloadClient:
 
 		return chosen
 
-	def _choose_extended_version(self, versions: list[MP3JuicesSongType], duration: int):
+	def _choose_extended_version(self, versions: list[MP3JuicesSongType], og_duration: int):
 		for version in versions:
-			if version['duration'] > duration and 'extended' in version['title'].lower():
+			duration = version['duration']
+			if duration > og_duration and 'extended' in version['title'].lower():
 				return version
 
 		for version in versions:
-			if version['duration'] > duration:
+			duration = version['duration']
+			multiplier = 4 if og_duration < 180 else 3
+			if duration > og_duration * 1.2 and duration < og_duration * multiplier:
 				return version
 
 
