@@ -104,7 +104,7 @@ class DownloadClient:
 		try:
 			album_cover_url = song_info['album']['thumb']['photo_600']
 		except Exception as e:
-			log.error(f'Album cover not available for {query}')
+			log.debug(f'Album cover not available for {query}')
 			return
 			
 		try:

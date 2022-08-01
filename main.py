@@ -5,10 +5,11 @@ import json
 from src.logger import log
 from src.downloader import Downloader
 
+DOWNLOADS_LOCATION = './downloads'
+
 def main():
 	log.warning('\nStarting...')
 
-	DOWNLOADS_LOCATION = './downloads'
 
 	settings_file = './settings.json'
 	if os.path.isfile(settings_file):

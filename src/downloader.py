@@ -76,6 +76,8 @@ class Downloader:
 		file_location = f'{self.downloads_location}/All Songs/{filename}'
 		if self.is_file(file_location):
 			log.debug(f'"{query}" already downloaded.')
+			album_cover = self.mp3.download_album_cover(song_info)
+			self.fh.edit_file_metadata(filename, track_num, track, song_info, album_cover)
 			return
 
 		log.info(f'Downloading "{query}"...')
@@ -85,8 +87,8 @@ class Downloader:
 		self.fh.write_song(filename, song)
 
 		album_cover = self.mp3.download_album_cover(song_info)
-
 		self.fh.edit_file_metadata(filename, track_num, track, song_info, album_cover)
+
 
 
 	def move_tracks_to_folder(self, playlist_name: str, track_list: list[str]):
@@ -97,6 +99,9 @@ class Downloader:
 			dst = f'{self.downloads_location}/{playlist_name}/{track_name}'
 
 			if not self.is_file(src):
+				continue
+
+			if self.is_file(dst):
 				continue
 
 			shutil.copy2(src, dst)
