@@ -1,6 +1,6 @@
 import shutil
 import os
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import Future, ThreadPoolExecutor
 
 from requests import Response
 
@@ -19,93 +19,82 @@ class Downloader:
 		self.mp3 = DownloadClient(url)
 		self.fh = FileHandler(downloads_location=downloads_location)
 
-		self.fh.create_playlist_folder('')
 		self.fh.create_playlist_folder('All Songs')
 
 			
-	def download_playlists(self):
+	def get_playlists(self):
 		with open('./playlists.txt') as f:
-			playlists = [line.strip() for line in f.readlines()]
+			playlists = [
+				line.strip()
+				for line in f.readlines()
+				if line.startswith('https://open.spotify.com/playlist/')
+			]
 
 		log.info(f'Found {len(playlists)} playlists.')
 		# tracks_in_playlists = {}
 		for url in playlists:
 			playlist_name = self.sp.get_playlist_name(url)
+			playlist_name = self.fh.normalize_name(playlist_name)
+			self.fh.create_playlist_folder(playlist_name)
+
 			log.info(f'Downloading {playlist_name}')
 
-			track_list = self.download_playlist(url)
+			self.get_playlist(url, playlist_name)
 
-			# tracks_in_playlists[playlist_name] = track_list
-			log.debug(f'Tracklist of {playlist_name}')
-			log.debug(track_list)
 
-			self.move_tracks_to_folder(playlist_name, track_list)
-		
-
-	def download_playlist(self, url: str):
+	def get_playlist(self, url: str, playlist_name: str):
 		tracks = self.sp.get_playlist_tracks(url)
 
-		track_list = []
 
 		log.info(f'Playlist has {len(tracks)} tracks in it.')
 		with ThreadPoolExecutor() as executor:
 			for i, track in enumerate(tracks):
-				# self.download_song(track, track_list)
-				query = self.sp.track_to_query(track)
-				filename = f'{query}.mp3'
-				filename = filename.replace('/', '')
+				future = executor.submit(self.get_song, playlist_name, track, (i+1, len(tracks)))
+				future.add_done_callback(self.log_future_exception)
 
-				track_list.append(filename)
+		self.fh.delete_old_songs_from_playlist(playlist_name, tracks)
 
-				executor.submit(self.download_song, track, (i+1, len(tracks)), filename)
-				# self.download_song(track, (i+1, len(tracks)), filename)
+	def log_future_exception(self, future: Future):
+		ex = future.exception()
+		if ex is not None:
+			log.exception(ex)
 
-		return track_list
-
-
-	def download_song(self, track: dict, track_num: int, filename: str):
-		duration = round(track['track']['duration_ms'] / 1000)
-		query = self.sp.track_to_query(track)
-
+	def get_song(self, playlist_name: str, track: dict, track_num: int):
+		query = self.fh.track_to_query(track)
 		log.debug(f'Searching for "{query}"')
-		song_info = self.mp3.find_song(query, duration)
-		if song_info is None:
+
+		file_name = f'{self.fh.normalize_name(query)}.mp3'
+		duration = round(track['track']['duration_ms'] / 1000)
+
+		download_info = self.mp3.find_song(query, duration)
+		if download_info is None:
 			return
 
+		download_path = f'{self.downloads_location}/All Songs/{file_name}'
+		destination_path = f'{self.downloads_location}/{playlist_name}/{file_name}'
 
-		file_location = f'{self.downloads_location}/All Songs/{filename}'
-		if self.is_file(file_location):
+
+		if self.fh.is_file(download_path):
+			album_cover = self.mp3.download_album_cover(download_info)
+			self.fh.edit_file_metadata(destination_path, track_num, track, download_info, album_cover)
+			
+			if not self.fh.is_file(destination_path):
+				self.fh.copy_track_to_folder(playlist_name, file_name)
+				self.fh.edit_track_num(destination_path, track_num)
+			# if duration == self.fh.get_track_duration(download_location):
 			log.debug(f'"{query}" already downloaded.')
-			album_cover = self.mp3.download_album_cover(song_info)
-			self.fh.edit_file_metadata(filename, track_num, track, song_info, album_cover)
 			return
+
 
 		log.info(f'Downloading "{query}"...')
-		song = self.mp3.download_song(song_info)
+		song = self.mp3.download_song(download_info)
 		if song is None:
 			return
-		self.fh.write_song(filename, song)
 
-		album_cover = self.mp3.download_album_cover(song_info)
-		self.fh.edit_file_metadata(filename, track_num, track, song_info, album_cover)
+		self.fh.write_song(file_name, song)
 
+		album_cover = self.mp3.download_album_cover(download_info)
+		self.fh.edit_file_metadata(download_path, track_num, track, download_info, album_cover)
 
-
-	def move_tracks_to_folder(self, playlist_name: str, track_list: list[str]):
-		playlist_name = self.fh.normalize_name(playlist_name)
-		self.fh.create_playlist_folder(playlist_name)
-		for track_name in track_list:
-			src = f'{self.downloads_location}/All Songs/{track_name}'
-			dst = f'{self.downloads_location}/{playlist_name}/{track_name}'
-
-			if not self.is_file(src):
-				continue
-
-			if self.is_file(dst):
-				continue
-
-			shutil.copy2(src, dst)
-
-	@staticmethod
-	def is_file(file_location: str):
-		return os.path.isfile(file_location)
+		self.fh.copy_track_to_folder(playlist_name, file_name)
+		self.fh.edit_track_num(destination_path, track_num)

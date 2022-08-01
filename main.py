@@ -22,9 +22,14 @@ def main():
 	vpn = input('Are you using a VPN? [Y/N]\n')
 	if vpn.lower() != 'y':
 		return
+
+	extended_input = input('Download extended versions of the songs? [Y/N]\n')
+	extended = False
+	if extended_input.lower() == 'y':
+		extended = True
 		
 	downloader = Downloader(DOWNLOADS_LOCATION, url)
-	downloader.download_playlists()
+	downloader.get_playlists()
 
 	log.warning('Done.')
 
