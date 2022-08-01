@@ -24,13 +24,19 @@ class DownloadClient:
 				return val
 		return
 
-	def find_song(self, query: str, duration: int):
+	def find_song(self, query: str, duration: int, extended: bool):
+		if extended:
+			query += ' extended'
 		versions = self._get_song_versions(query)
 		if versions is None:
 			log.error(f'Couldn\'t find "{query}"')
 			return
 
-		song = self._choose_version(versions, duration)
+		if extended:
+			song = self._choose_extended_version(versions, duration)
+		else:
+			song = self._choose_closest_version(versions, duration)
+
 		if song is None:
 			log.error(f'No versions available for "{query}"')
 		return song
@@ -70,20 +76,30 @@ class DownloadClient:
 		return parsed['response']
 
 
-	def _choose_version(self, versions: list[MP3JuicesSongType], duration: int):
+	def _choose_closest_version(self, versions: list[MP3JuicesSongType], duration: int):
 		""" choose the version that has the duration
-				closest to spotify """
+				closest to spotify with penalty the further
+				down it is in the list"""
 
 		chosen = None
 		smallest_diff = 99999
-		for version in versions:
-			diff = abs(duration - version['duration'])
+		for i, version in enumerate(versions):
+			diff = abs(duration - version['duration']) * i
 
 			if diff < smallest_diff:
 				smallest_diff = diff
 				chosen = version
 
 		return chosen
+
+	def _choose_extended_version(self, versions: list[MP3JuicesSongType], duration: int):
+		for version in versions:
+			if version['duration'] > duration and 'extended' in version['title'].lower():
+				return version
+
+		for version in versions:
+			if version['duration'] > duration:
+				return version
 
 
 	def download_song(self, song: MP3JuicesSongType):

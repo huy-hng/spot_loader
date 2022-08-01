@@ -28,7 +28,7 @@ def main():
 	if extended_input.lower() == 'y':
 		extended = True
 		
-	downloader = Downloader(DOWNLOADS_LOCATION, url)
+	downloader = Downloader(DOWNLOADS_LOCATION, url, extended)
 	downloader.get_playlists()
 
 	log.warning('Done.')
