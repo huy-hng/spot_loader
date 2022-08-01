@@ -1,4 +1,7 @@
+from email.mime import audio
 import os
+import glob
+import shutil
 
 from requests import Response
 import eyed3
@@ -16,11 +19,18 @@ class FileHandler:
 	def normalize_name(self, name: str):
 		return name.replace('/', '_')
 
+
+	def track_to_query(self, track: dict):
+		track = track['track']
+		track_name = track['name'] 
+		track_artist = track['artists'][0]['name']
+		return f'{track_artist} - {track_name}'
+	
+
 	def create_playlist_folder(self, playlist_name: str):
 		playlist_name = self.normalize_name(playlist_name)
-		downloads_folder = f'{self.downloads_location}/{playlist_name}'
-		if not os.path.isdir(downloads_folder):
-			os.mkdir(downloads_folder)
+		playlist_folder = f'{self.downloads_location}/{playlist_name}'
+		os.makedirs(playlist_folder, exist_ok=True)
 
 
 	def write_song(self, filename: str, res: Response):
@@ -35,22 +45,78 @@ class FileHandler:
 			log.exception(e)
 
 
-	def edit_file_metadata(self, filename:str,
+	def delete_old_songs_from_playlist(self, playlist_name: str, tracks: list[dict]):
+		queries = [self.track_to_query(track) for track in tracks]
+		track_list = [f'{self.normalize_name(query)}.mp3' for query in queries]
+
+		tracks_currently_in_folder = glob.glob(
+			f'{self.downloads_location}/{playlist_name}/*.mp3')
+		for path in tracks_currently_in_folder:
+			track = path.split('/')[-1]
+			if track not in track_list:
+				log.warning(f'Removing {track} from {playlist_name}')
+				os.remove(path)
+
+
+	def copy_track_to_folder(self, playlist_name: str, file_name: str):
+		src = f'{self.downloads_location}/All Songs/{file_name}'
+		dst = f'{self.downloads_location}/{playlist_name}/{file_name}'
+
+		# if track to copy doesnt exist
+		if not self.is_file(src): return
+
+		# if track already in folder
+		if self.is_file(dst): return
+
+		shutil.copy2(src, dst)
+
+	def copy_tracks_to_folder(self, playlist_name: str, track_list: list[str]):
+		playlist_name = self.fh.normalize_name(playlist_name)
+		self.fh.create_playlist_folder(playlist_name)
+		for track_name in track_list:
+			self.copy_track_to_folder(playlist_name, track_name)
+
+
+	def load_audiofile(self, file_path: str):
+		try:
+			audiofile = eyed3.load(file_path)
+		except IOError:
+			log.error(f"Cannot find {file_path.split('/')[-1]}")
+			return
+
+		if audiofile is None:
+			log.error(f"Cannot find {file_path.split('/')[-1]}")
+
+		return audiofile
+
+
+	def get_track_duration(self, file_path: str):
+		audiofile = self.load_audiofile(file_path)
+		duration = audiofile.info.time_secs
+		return duration
+
+	def edit_track_num(self, file_path: str, track_num: int):
+		audiofile = self.load_audiofile(file_path)
+		audiofile.tag.track_num = track_num
+		audiofile.tag.save()
+
+
+	def edit_file_metadata(self, file_path:str,
 															 track_num: int,
 															 track: dict,
 															 song: MP3JuicesSongType,
 															 album_cover: Response):
 
-		filename = self.normalize_name(filename)
-		audiofile = eyed3.load(f'{self.downloads_location}/All Songs/{filename}')
-
+		# audiofile = eyed3.load(f'{self.downloads_location}/All Songs/{filename}')
+		audiofile = self.load_audiofile(file_path)
 		if audiofile is None:
-			log.error(f"Coudn't change Meta Data of {filename}")
+			log.error(f'Cannot find file "{file_path}"')
 			return
 
 		if (audiofile.tag == None):
 			audiofile.initTag()
 
+		log.debug(f'Editing metadata for {file_path.split("/")[-1]}')
 		track = track['track']
 		track_name = track['name']
 		track_artist = track['artists'][0]['name']
@@ -69,9 +135,6 @@ class FileHandler:
 
 		audiofile.tag.save()
 
-
-	def get_filename(self, song: MP3JuicesSongType):
-		filename = f"{song['artist']} - {song['title']}.mp3"
-		return filename
-
-	# def get_file_location(self, filename: str):
+	@staticmethod
+	def is_file(file_location: str):
+		return os.path.isfile(file_location)
