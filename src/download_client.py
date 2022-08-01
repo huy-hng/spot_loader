@@ -12,7 +12,7 @@ class DownloadClient:
 		normalized_url = self.normalize_url(url)
 		if normalized_url is None:
 			raise Exception('Bad url >:(')
-		log.warning(f'Using {normalized_url}...')
+		log.info(f'Using {normalized_url}...')
 
 		self.SEARCH_URL = f'https://{normalized_url}/api/search.php?callback=jQuery213021082371575984715_1635945826190'
 		
@@ -27,12 +27,12 @@ class DownloadClient:
 	def find_song(self, query: str, duration: int):
 		versions = self._get_song_versions(query)
 		if versions is None:
-			log.error(f"Couldn't find {query}")
+			log.error(f'Couldn\'t find "{query}"')
 			return
 
 		song = self._choose_version(versions, duration)
 		if song is None:
-			log.error(f'No versions available for {query}')
+			log.error(f'No versions available for "{query}"')
 		return song
 
 	def _get_song_versions(self, search_query: str):
