@@ -25,6 +25,8 @@ class Spotipy:
 		items = {'next': True}
 		while items['next']:
 			items = self.sp.playlist_items(uri, offset=offset)
+			if items is None:
+				break
 			tracks += items['items']
 			offset += 100
 
@@ -39,12 +41,26 @@ class Spotipy:
 
 	def track_to_query(self, track):
 		track = track['track']
-		track_name = track['name'] 
+		track_name = track['name']
 		track_artist = track['artists'][0]['name']
 		return f'{track_artist} - {track_name}'
-	
+
 
 	def get_playlist_name(self, url: str):
 		uri = self.get_uri_from_url(url)
 		playlist = self.sp.playlist(uri)
+		if playlist is None:
+			return ''
 		return playlist['name']
+
+
+	@staticmethod
+	def parse_track(track_info):
+		track = track_info['track']
+		return {
+			'artists': ' '.join([artist['name'] for artist in track['artists']]),
+			'name': track['name'],
+			'duration': round(track['duration_ms'] / 1000),
+			'album_name': track['album']['name'],
+			'album_cover_url': track['album']['images'][0],
+		}

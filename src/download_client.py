@@ -1,4 +1,7 @@
+import time
+import difflib
 import json
+from pprint import pprint
 
 import requests
 from requests import Response
@@ -15,27 +18,29 @@ class DownloadClient:
 		log.warning(f'Using {normalized_url}...')
 
 		self.SEARCH_URL = f'https://{normalized_url}/api/search.php?callback=jQuery213021082371575984715_1635945826190'
-		
-	def normalize_url(self, url: str):
-		vals = url.split('/')
-		vals.reverse()
-		for val in vals:
-			if val:
-				return val
-		return
 
-	def find_song(self, query: str, duration: int):
-		versions = self._get_song_versions(query)
+
+	def get_song(self, parsed_track: dict, query: str):
+		song = self.find_song(parsed_track, query)
+		if song is None: return
+		return self.download_song(song)
+
+
+	def find_song(self, parsed_track: dict, query: str):
+		versions = self._get_available_versions(query)
+
 		if versions is None:
 			log.error(f"Couldn't find {query}")
 			return
 
-		song = self._choose_version(versions, duration)
+		# song = self._choose_version(versions, duration)
+		song = self.get_highest_score(parsed_track, versions)
 		if song is None:
 			log.error(f'No versions available for {query}')
 		return song
 
-	def _get_song_versions(self, search_query: str):
+
+	def _get_available_versions(self, search_query: str):
 		""" throws exception if query couldnt be found """
 		q = search_query.replace(' ', '+')
 
@@ -50,7 +55,45 @@ class DownloadClient:
 				return
 
 		songs: list[MP3JuicesSongType] = data[1:]
+
 		return songs
+
+
+	def get_highest_score(self, track, versions):
+		sorted_by_score = []
+		highest_score = 0
+		chosen_version = None
+
+		for version in versions:
+			score = self.version_score(track, version)
+
+			if score > highest_score:
+				highest_score = score
+				chosen_version = version
+
+			sorted_by_score.append((score, version))
+
+		if chosen_version is None:
+			chosen_version = versions[0]
+
+		return chosen_version
+
+
+	def version_score(self, track, version):
+		title_ratio = compare_str(track['name'], version['title'])
+		artist_ratio = compare_str(track['artists'], version['artist'])
+
+		extended = 1
+		if 'extended' in clean_str(version['title']):
+			extended = 0
+
+		remix = 1
+		if 'remix' in clean_str(version['title']):
+			remix = 0
+
+		dur_diff = duration_ratio(track, version)
+		avg = average(title_ratio, artist_ratio, dur_diff[0], remix, extended)
+		return avg
 
 
 	def _search_for_query(self, search_query):
@@ -83,6 +126,7 @@ class DownloadClient:
 				smallest_diff = diff
 				chosen = version
 
+
 		return chosen
 
 
@@ -91,7 +135,7 @@ class DownloadClient:
 		try:
 			return self.request(song['url'])
 		except Exception as e:
-			log.exception(e)
+			# log.exception(e)
 			log.error(f"Couldn't download {song['title']} by {song['artist']}")
 			return
 
@@ -99,14 +143,14 @@ class DownloadClient:
 	def download_album_cover(self, song_info: MP3JuicesSongType):
 		title = song_info['title']
 		artist = song_info['artist']
-		query = f'{title} by {artist}' 
+		query = f'{title} by {artist}'
 
 		try:
 			album_cover_url = song_info['album']['thumb']['photo_600']
 		except Exception as e:
 			log.error(f'Album cover not available for {query}')
 			return
-			
+
 		try:
 			return self.request(album_cover_url)
 		except Exception as e:
@@ -133,3 +177,35 @@ class DownloadClient:
 
 		return res
 
+
+	def normalize_url(self, url: str):
+		vals = url.split('/')
+		vals.reverse()
+		for val in vals:
+			if val:
+				return val
+		return
+
+
+def clean_str(string: str):
+	return ''.join(e for e in string if e.isalnum()).lower()
+
+
+def compare_str(a: str, b: str, junk = None):
+	a = clean_str(a)
+	b = clean_str(b)
+	match = difflib.SequenceMatcher(junk, a, b)
+	return match.ratio()
+
+
+def duration_ratio(track, version):
+	ratio = version['duration'] / track['duration']
+	# normalized = 1 - abs(1 - ratio)
+	clamped = ratio
+	if ratio > 1: clamped = 1
+
+	return clamped, ratio
+
+
+def average(*args):
+	return sum(args) / len(args)

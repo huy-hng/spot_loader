@@ -1,3 +1,4 @@
+import shutil
 import os
 
 from requests import Response
@@ -15,6 +16,7 @@ class FileHandler:
 
 	def normalize_name(self, name: str):
 		return name.replace('/', '_')
+
 
 	def create_playlist_folder(self, playlist_name: str):
 		playlist_name = self.normalize_name(playlist_name)
@@ -35,31 +37,34 @@ class FileHandler:
 			log.exception(e)
 
 
-	def edit_file_metadata(self, filename:str,
-															 track_num: int,
-															 track: dict,
-															 song: MP3JuicesSongType,
-															 album_cover: Response):
+	def move_track(self, playlist_name: str, track_filename: str):
+		src = f'{self.downloads_location}/All Songs/{track_filename}'
+		dst = f'{self.downloads_location}/{playlist_name}/{track_filename}'
 
-		filename = self.normalize_name(filename)
-		audiofile = eyed3.load(f'{self.downloads_location}/All Songs/{filename}')
+		if self.is_file(src) and not self.is_file(dst):
+			shutil.copy2(src, dst)
+
+
+	def edit_file_metadata(self,
+			file_path:str,
+			track_num: tuple[int, int],
+			track: dict,
+			# song: MP3JuicesSongType,
+			album_cover: Response | None):
+
+		audiofile = eyed3.load(file_path)
 
 		if audiofile is None:
-			log.error(f"Coudn't change Meta Data of {filename}")
+			log.error(f"Coudn't change Meta Data of {file_path}")
 			return
 
 		if (audiofile.tag == None):
 			audiofile.initTag()
 
-		track = track['track']
-		track_name = track['name']
-		track_artist = track['artists'][0]['name']
-		audiofile.tag.artist = track_artist
-		audiofile.tag.title = track_name
+		audiofile.tag.artist = track['artists']
+		audiofile.tag.title = track['name']
 		audiofile.tag.track_num = track_num
-
-		if song.get('album') is not None:
-			audiofile.tag.album = song['album']['title']
+		audiofile.tag.album = track['album_name']
 
 		if album_cover is not None:
 			audiofile.tag.images.set(
@@ -70,8 +75,6 @@ class FileHandler:
 		audiofile.tag.save()
 
 
-	def get_filename(self, song: MP3JuicesSongType):
-		filename = f"{song['artist']} - {song['title']}.mp3"
-		return filename
-
-	# def get_file_location(self, filename: str):
+	@staticmethod
+	def is_file(file_location: str):
+		return os.path.isfile(file_location)
