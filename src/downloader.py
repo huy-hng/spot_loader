@@ -19,7 +19,7 @@ class Downloader:
 		self.mp3 = DownloadClient(url)
 		self.fh = FileHandler(downloads_location=downloads_location, extended=extended)
 
-		self.fh.create_playlist_folder('All Songs')
+		os.makedirs(f'{self.downloads_location}/All Songs', exist_ok=True)
 		self.extended = extended
 
 			
@@ -41,11 +41,11 @@ class Downloader:
 		playlist_name = self.sp.get_playlist_name(url)
 		playlist_name = self.fh.normalize_name(playlist_name)
 
-		if self.extended:
-			playlist_name += ' - Extended'
+		# if self.extended:
+		# 	playlist_name += ' - Extended'
 		log.info(f'Downloading {playlist_name}')
 
-		playlist_path = self.fh.create_playlist_folder(f'{playlist_name}', self.extended)
+		playlist_path = self.fh.create_playlist_folder(f'{playlist_name}')
 
 		tracks = self.sp.get_playlist_tracks(url)
 
@@ -107,7 +107,7 @@ class Downloader:
 		self.fh.write_song(file_name, song)
 
 		album_cover = self.mp3.download_album_cover(download_info)
-		self.fh.edit_file_metadata(download_path, track_num, track, download_info, album_cover)
+		self.fh.edit_file_metadata(download_path, track, download_info, album_cover)
 
 		self.fh.copy_track_to_folder(playlist_path, file_name)
 		self.fh.edit_track_num(destination_path, track_num)

@@ -29,11 +29,12 @@ class FileHandler:
 		return f'{track_artist} - {track_name}'
 	
 
-	def create_playlist_folder(self, playlist_name: str, extended: bool=False):
+	def create_playlist_folder(self, playlist_name: str):
 		playlist_name = self.normalize_name(playlist_name)
-		playlist_folder = f'{self.downloads_location}/{playlist_name}'
-		if extended:
+		if self.extended:
 			playlist_folder = f'{self.downloads_location}/Extended Playlists/{playlist_name}'
+		else:
+			playlist_folder = f'{self.downloads_location}/Playlists/{playlist_name}'
 		os.makedirs(playlist_folder, exist_ok=True)
 		return playlist_folder
 
@@ -111,7 +112,7 @@ class FileHandler:
 
 
 	def edit_file_metadata(self, file_path:str,
-															 track_num: tuple[int, int],
+															#  track_num: tuple[int, int] | None,
 															 track: dict,
 															 song: MP3JuicesSongType,
 															 album_cover: Response | None):
@@ -131,7 +132,7 @@ class FileHandler:
 		track_artist = track['artists'][0]['name']
 		audiofile.tag.artist = track_artist
 		audiofile.tag.title = track_name
-		audiofile.tag.track_num = track_num
+		# audiofile.tag.track_num = track_num
 
 		if song.get('album') is not None:
 			audiofile.tag.album = song['album']['title']

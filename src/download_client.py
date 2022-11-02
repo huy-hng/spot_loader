@@ -15,7 +15,7 @@ class DownloadClient:
 		log.info(f'Using {normalized_url}...')
 
 		self.SEARCH_URL = f'https://{normalized_url}/api/search.php?callback=jQuery213021082371575984715_1635945826190'
-		
+
 	def normalize_url(self, url: str):
 		vals = url.split('/')
 		vals.reverse()
@@ -25,8 +25,8 @@ class DownloadClient:
 		return
 
 	def find_song(self, query: str, duration: int, extended: bool):
-		if extended:
-			query += ' extended'
+		#if extended:
+		#	query += ' extended'
 		versions = self._get_song_versions(query)
 		if versions is None:
 			log.error(f'Couldn\'t find "{query}"')
@@ -93,7 +93,7 @@ class DownloadClient:
 	def _choose_extended_version(self, versions: list[MP3JuicesSongType], og_duration: int):
 		for version in versions:
 			duration = version['duration']
-			if duration > og_duration and 'extended' in version['title'].lower():
+			if duration > og_duration and 'extend' in version['title'].lower():
 				return version
 
 		for version in versions:
@@ -116,14 +116,14 @@ class DownloadClient:
 	def download_album_cover(self, song_info: MP3JuicesSongType):
 		title = song_info['title']
 		artist = song_info['artist']
-		query = f'{title} by {artist}' 
+		query = f'{title} by {artist}'
 
 		try:
 			album_cover_url = song_info['album']['thumb']['photo_600']
 		except Exception as e:
 			log.debug(f'Album cover not available for {query}')
 			return
-			
+
 		try:
 			return self.request(album_cover_url)
 		except Exception as e:
