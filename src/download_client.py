@@ -22,12 +22,6 @@ def parse_url(url: str):
 	SEARCH_URL = f'https://{normalized_url}/api/search.php?callback=jQuery213021082371575984715_1635945826190'
 
 
-def get_song(parsed_track: dict, query: str):
-	song = find_song(parsed_track, query)
-	if song is None: return
-	return download_song(song)
-
-
 def find_song(parsed_track: dict, query: str):
 	versions = _get_available_versions(query)
 
