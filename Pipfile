@@ -8,6 +8,7 @@ requests = "*"
 eyed3 = "*"
 spotipy = "*"
 python-dotenv = "*"
+unidecode = "*"
 
 [dev-packages]
 

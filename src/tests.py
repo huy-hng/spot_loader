@@ -6,7 +6,7 @@ from datetime import datetime
 from pprint import pprint
 from src.song import MP3JuicesSongType
 from src.spotify import Spotipy
-from src.download_client import DownloadClient
+from src import download_client as mp3
 
 
 def get_results(futures):
@@ -29,7 +29,7 @@ def get_results(futures):
 
 def optimize_query(download_url: str, playlist_url: str):
 	# sp = Spotipy()
-	mp3 = DownloadClient(download_url)
+	mp3.parse_url(download_url)
 
 	# tracks = sp.get_playlist_tracks(playlist_url)
 	with open('tests/spotify_tracks_test.json') as f:

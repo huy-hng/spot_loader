@@ -4,7 +4,9 @@ import json
 import concurrent.futures
 
 from src.logger import log
-from src.downloader import Downloader
+from src import downloader
+from src import download_client
+from src import file_handler
 from src.tests import optimize_query, get_results
 
 def get_url():
@@ -21,48 +23,22 @@ def get_url():
 		return
 
 
-def save(obj):
-    return (obj.__class__, obj.__dict__)
+DOWNLOADS_LOCATION = './downloads'
+def setup(url):
+	file_handler.set_downloads_location(DOWNLOADS_LOCATION)
+	file_handler.create_playlist_folder('')
+	file_handler.create_playlist_folder('All Songs')
+
+	downloader.set_downloads_location(DOWNLOADS_LOCATION)
+	download_client.parse_url(url)
 
 
-def restore(saved):
-	print(saved)
-	cls = saved[0]
-	attributes = saved[1]
-	obj = cls.__new__(cls)
-	obj.__dict__.update(attributes)
-	return obj
-
-def run(saved, url):
-	print(saved)
-	# restored: Downloader = restore(saved)
-	# restored.download_playlist(url)
-
-
-def download(url):
+def download():
 	log.warning('\nStarting...')
-
-	DOWNLOADS_LOCATION = './downloads'
-	# DOWNLOADS_LOCATION = './downloads2'
-
 	start = time.perf_counter()
-	downloader = Downloader(DOWNLOADS_LOCATION, url)
-	print(downloader.downloads_location)
-
-	with open('./playlists.txt') as f:
-		playlist_urls = [line.strip() for line in f.readlines()]
-
-	log.info(f'Found {len(playlist_urls)} playlist.')
-
-	# saved = save(downloader)
-	# # restored = restore(saved)
-	# with concurrent.futures.ProcessPoolExecutor(max_workers=16) as executor:
-	# 	for res in executor.map(run, saved, playlist_urls):
-	# 		print(res)
 
 	downloader.download_playlists()
 
-	# downloader.executor.shutdown(wait=True)
 	end = time.perf_counter()
 	log.warning(f'Done. Time taken: {end-start}')
 
@@ -84,7 +60,8 @@ def main():
 	url = 'https://myfreemp3juices.cc/'
 	if url is None:
 		return
-	download(url)
+	setup(url)
+	download()
 
 
 if __name__ == '__main__':
