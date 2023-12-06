@@ -19,7 +19,7 @@ def parse_url(url: str):
 	if normalized_url is None:
 		raise Exception('Bad url >:(')
 	log.warning(f'Using {normalized_url}...')
-	SEARCH_URL = f'https://{normalized_url}/api/search.php?callback=jQuery213021082371575984715_1635945826190'
+	SEARCH_URL = f'https://{normalized_url}/api/api_search.php?callback=jQuery21309619182952817867_1701860542414'
 
 
 def find_song(parsed_track: dict, query: str):
