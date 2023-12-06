@@ -9,6 +9,7 @@ from src import download_client as mp3
 from src import file_handler as fh
 
 DOWNLOADS_LOCATION = './downloads'
+ASYNC = True
 
 def set_downloads_location(path: str):
 	global DOWNLOADS_LOCATION
@@ -29,9 +30,11 @@ def download_playlists():
 	with ProcessPoolExecutor() as executor:
 		# executor.map(download_playlist, playlist_urls)
 		for url in playlist_urls:
-			f = executor.submit(download_playlist, url)
-			f.add_done_callback(log_future_exception)
-			# download_playlist(url)
+			if ASYNC:
+				f = executor.submit(download_playlist, url)
+				f.add_done_callback(log_future_exception)
+			else:
+				download_playlist(url)
 
 
 def download_playlist(url: str):
@@ -45,15 +48,21 @@ def download_playlist(url: str):
 	tracks = sp.get_playlist_tracks(url)
 
 	futures = []
+	track_list = [] # for deleting old songs
 	with ThreadPoolExecutor(max_workers=32) as executor:
 		for i, track in enumerate(tracks):
 			parsed_track = sp.parse_track(track)
-			future = executor.submit(download_song, playlist_name, parsed_track, (i+1, len(tracks)))
-			future.add_done_callback(log_future_exception)
-			futures.append(future)
-			# download_song(playlist_name, parsed_track, (i+1, len(tracks)))
+			if ASYNC:
+				future = executor.submit(download_song, playlist_name, parsed_track, (i+1, len(tracks)))
+				future.add_done_callback(log_future_exception)
+				futures.append(future)
+			else:
+				filename = download_song(playlist_name, parsed_track, (i+1, len(tracks)))
+				track_list.append(filename)
 
-	track_list = [future.result() for future in futures if future.result() is not None]
+	if ASYNC:
+		track_list = [future.result() for future in futures if future.result() is not None]
+
 	end = time.perf_counter()
 	log.info(f'{playlist_name} time taken: {end-start}')
 	fh.delete_old_songs_from_playlist(playlist_path, track_list)
