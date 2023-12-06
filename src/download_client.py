@@ -1,15 +1,12 @@
-import os
-import time
 import difflib
 import json
-from pprint import pprint
 
 import requests
 from requests import Response
 
 import src.file_handler as fh
 from src.logger import log
-from src.song import MP3JuicesSongType
+from src.types import MP3JuicesSongType
 
 SEARCH_URL = ''
 
@@ -106,7 +103,7 @@ def _search_for_query(search_query):
 		parsed = json.loads(text[start_index:end_index+1])
 		tries -= 1
 
-	return parsed['response']
+	return parsed.get('response')
 
 
 def _choose_version(versions: list[MP3JuicesSongType], duration: int):

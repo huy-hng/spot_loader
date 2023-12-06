@@ -4,7 +4,7 @@ import difflib
 from concurrent.futures import ThreadPoolExecutor, as_completed, wait, ALL_COMPLETED
 from datetime import datetime
 from pprint import pprint
-from src.song import MP3JuicesSongType
+from src.types import MP3JuicesSongType
 from src.spotify import Spotipy
 from src import download_client as mp3
 

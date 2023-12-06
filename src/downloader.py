@@ -1,9 +1,5 @@
 import time
-import os
-from concurrent.futures import ALL_COMPLETED, ThreadPoolExecutor, ProcessPoolExecutor, Future
-import concurrent.futures
-
-from requests import Response
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, Future
 
 from src import helpers
 from src.logger import log
@@ -11,8 +7,6 @@ from src.spotify import Spotipy
 # from src.download_client import DownloadClient
 from src import download_client as mp3
 from src import file_handler as fh
-
-from src.song import MP3JuicesSongType
 
 DOWNLOADS_LOCATION = './downloads'
 

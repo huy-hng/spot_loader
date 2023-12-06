@@ -1,11 +1,11 @@
+DOWNLOADS_LOCATION = './downloads'
+
 import time
 import os
 import json
 
 from src.logger import log
-from src import downloader
-from src import download_client
-from src import file_handler
+from src import downloader, download_client, file_handler
 
 def get_url():
 	settings_file = './settings.json'
@@ -22,7 +22,6 @@ def get_url():
 	return url
 
 
-DOWNLOADS_LOCATION = './downloads'
 def setup(url):
 	file_handler.set_downloads_location(DOWNLOADS_LOCATION)
 	file_handler.create_playlist_folder('')

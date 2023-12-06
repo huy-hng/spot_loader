@@ -2,16 +2,14 @@ import shutil
 import os
 import glob
 
-import requests
 from requests import Response
 import eyed3
-from eyed3.core import Tag
+# from eyed3.core import Tag
 from eyed3.id3.frames import ImageFrame
 eyed3.log.setLevel("ERROR")
 
 from src import helpers
 from src.logger import log
-from src.song import MP3JuicesSongType
 
 DOWNLOADS_LOCATION = './downloads'
 
